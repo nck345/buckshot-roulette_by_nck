@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Crosshair, UserCheck, Copy, Check, Eye } from 'lucide-react';
+import { Crosshair, UserCheck, Copy, Check, Eye, LogOut } from 'lucide-react';
 import AdrenalineModal from './AdrenalineModal';
 import { soundManager } from '../audio/soundManager';
 import { ITEMS_INFO, ITEM_TYPES } from '../utils/items';
 
-export default function GameTable({ gameState, socketId, onShoot, onUseItem, privateHint, clearPrivateHint }) {
+export default function GameTable({ gameState, socketId, onShoot, onUseItem, onLeaveRoom, privateHint, clearPrivateHint }) {
   const [copied, setCopied] = useState(false);
   const [showAdrenalineModal, setShowAdrenalineModal] = useState(false);
   const [adrenalineItemIndex, setAdrenalineItemIndex] = useState(null);
@@ -170,10 +170,10 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, pri
 
   const getGunTransform = () => {
     if (aimDirection === 'right') {
-      return 'rotate(180deg) scale(1.35)'; // Points RIGHT
+      return 'rotate(180deg) scale(1.35)';
     }
     if (aimDirection === 'left') {
-      return 'rotate(0deg) scale(1.35)'; // Points LEFT
+      return 'rotate(0deg) scale(1.35)';
     }
     return 'rotate(0deg) scale(1)';
   };
@@ -187,7 +187,7 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, pri
   return (
     <div className="panorama-layout">
       
-      {/* 1. HEADER INFO BAR */}
+      {/* 1. HEADER INFO BAR WITH LEAVE GAME BUTTON */}
       <div className="game-header-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <span style={{ color: 'var(--accent-gold)', fontWeight: 'bold', fontFamily: 'var(--font-display)', fontSize: '1.1rem' }}>
@@ -203,10 +203,21 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, pri
           )}
         </div>
 
-        {/* Shell Counts HUD */}
-        <div style={{ display: 'flex', gap: '20px', fontFamily: 'var(--font-retro)', fontSize: '1.3rem' }}>
-          <span style={{ color: '#ff3b30' }}>🔴 THẬT: {gameState.liveCount}</span>
-          <span style={{ color: '#00e5ff' }}>🔵 GIẢ: {gameState.blankCount}</span>
+        {/* Shell Counts & Leave Game Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', gap: '15px', fontFamily: 'var(--font-retro)', fontSize: '1.3rem' }}>
+            <span style={{ color: '#ff3b30' }}>🔴 THẬT: {gameState.liveCount}</span>
+            <span style={{ color: '#00e5ff' }}>🔵 GIẢ: {gameState.blankCount}</span>
+          </div>
+
+          <button
+            className="cyber-button danger"
+            onClick={onLeaveRoom}
+            style={{ padding: '6px 14px', fontSize: '0.8rem', gap: '4px' }}
+          >
+            <LogOut size={14} />
+            THOÁT PHÒNG
+          </button>
         </div>
       </div>
 
@@ -232,7 +243,7 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, pri
       {/* 2. MAIN PANORAMA ARENA (FIXED LEFT P1 - CENTER - FIXED RIGHT P2) */}
       <div className="arena-grid">
 
-        {/* LEFT PANEL: PLAYER 1 (FIXED POSITION ON LEFT) */}
+        {/* LEFT PANEL: PLAYER 1 */}
         <div className={`player-side-card ${isLeftTurn ? 'active-turn' : ''} ${p1Flash ? 'damage-flash' : ''}`}>
           <div className="avatar-box">
             <div className="avatar-icon">👤</div>
@@ -259,7 +270,7 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, pri
 
           <div style={{ height: '1px', background: 'var(--panel-border)', margin: '4px 0' }} />
 
-          {/* LEFT PLAYER INVENTORY GRID (PUBLIC ITEMS FOR BOTH) */}
+          {/* LEFT PLAYER INVENTORY GRID */}
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
               KHAY VẬT PHẨM:
@@ -315,7 +326,7 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, pri
             </div>
           )}
 
-          {/* Shotgun Display with Direct Inline Transform Rotation */}
+          {/* Shotgun Display */}
           <div className="shotgun-container">
             <div
               className="shotgun-gun"
@@ -374,7 +385,7 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, pri
 
         </div>
 
-        {/* RIGHT PANEL: PLAYER 2 (FIXED POSITION ON RIGHT - PUBLIC ITEMS) */}
+        {/* RIGHT PANEL: PLAYER 2 */}
         <div className={`player-side-card ${isRightTurn ? 'active-turn' : ''} ${p2Flash ? 'damage-flash' : ''}`}>
           <div className="avatar-box">
             <div className="avatar-icon opponent">💀</div>
@@ -401,7 +412,7 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, pri
 
           <div style={{ height: '1px', background: 'var(--panel-border)', margin: '4px 0' }} />
 
-          {/* RIGHT PLAYER INVENTORY GRID (PUBLIC ITEMS FOR BOTH PLAYERS) */}
+          {/* RIGHT PLAYER INVENTORY GRID */}
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
               KHAY VẬT PHẨM:

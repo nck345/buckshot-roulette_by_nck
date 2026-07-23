@@ -89,6 +89,22 @@ export default function App() {
     setRoomCode('LOCAL');
   };
 
+  // LEAVE ROOM HANDLER
+  const handleLeaveRoom = () => {
+    if (isLocalMode) {
+      setIsLocalMode(false);
+      localEngineRef.current = null;
+      setGameState(null);
+      setRoomCode('');
+    } else {
+      if (socket && roomCode) {
+        socket.emit('leave_room', { code: roomCode });
+      }
+      setGameState(null);
+      setRoomCode('');
+    }
+  };
+
   // ACTION HANDLERS (ONLINE + LOCAL)
   const handleShoot = (target) => {
     if (isLocalMode && localEngineRef.current) {
@@ -135,7 +151,7 @@ export default function App() {
   };
 
   const handleLeave = () => {
-    window.location.href = window.location.origin;
+    handleLeaveRoom();
   };
 
   const isWaiting = gameState?.status === 'waiting';
@@ -162,6 +178,7 @@ export default function App() {
           socketId={activeSocketId}
           onShoot={handleShoot}
           onUseItem={handleUseItem}
+          onLeaveRoom={handleLeaveRoom}
           privateHint={privateHint}
           clearPrivateHint={() => setPrivateHint('')}
         />

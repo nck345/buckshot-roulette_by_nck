@@ -39,7 +39,7 @@ io.on('connection', (socket) => {
   socket.on('create_room', ({ nickname, initialHp, initialItems }, callback) => {
     const room = gameEngine.createRoom(socket.id, nickname, initialHp, initialItems);
     socket.join(room.code);
-    console.log(`🏠 Room created: ${room.code} by ${nickname} (HP: ${initialHp || 'random 3-6'}, Items: ${initialItems || 'random 0-2'})`);
+    console.log(`🏠 Room created: ${room.code} by ${nickname}`);
     if (callback) callback({ code: room.code });
     broadcastRoomState(room);
   });
@@ -88,6 +88,15 @@ io.on('connection', (socket) => {
 
     if (callback) callback({ success: true });
     broadcastRoomState(room);
+  });
+
+  socket.on('leave_room', ({ code }) => {
+    socket.leave(code);
+    console.log(`🚪 Player ${socket.id} left room ${code}`);
+    const result = gameEngine.leaveRoom(code, socket.id);
+    if (result && result.room) {
+      broadcastRoomState(result.room);
+    }
   });
 
   socket.on('restart_game', ({ code }) => {

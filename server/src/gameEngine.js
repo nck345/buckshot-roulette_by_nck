@@ -80,17 +80,24 @@ export class GameEngine {
     return this.rooms.get(code?.toUpperCase());
   }
 
+  // Handle player leaving or unexpected disconnect: resets remaining player to WAITING room state!
   removePlayer(socketId) {
     for (const [code, room] of this.rooms.entries()) {
       const pIndex = room.players.findIndex(p => p.socketId === socketId);
       if (pIndex !== -1) {
+        const leavingPlayer = room.players[pIndex];
         room.players.splice(pIndex, 1);
+
         if (room.players.length === 0) {
           this.rooms.delete(code);
         } else {
-          room.status = 'ended';
-          room.winner = room.players[0].socketId;
-          this.addLog(room, `${room.players[0].nickname} thắng do đối thủ ngắt kết nối!`);
+          // Reset room back to WAITING status so remaining player can wait with the same Room Code!
+          room.status = 'waiting';
+          room.winner = null;
+          room.currentIndex = 0;
+          room.sawActive = false;
+          room.lastAction = null;
+          this.addLog(room, `⚠️ ${leavingPlayer.nickname} đã thoát phòng. Đang chờ người chơi mới...`);
         }
         return { code, room };
       }
@@ -98,12 +105,17 @@ export class GameEngine {
     return null;
   }
 
+  leaveRoom(code, socketId) {
+    const room = this.rooms.get(code?.toUpperCase());
+    if (!room) return null;
+    return this.removePlayer(socketId);
+  }
+
   startGame(room) {
     room.status = 'playing';
     room.round = 1;
     room.turnIndex = Math.floor(Math.random() * 2);
 
-    // Initial HP: if empty, random 3 to 6
     let startHp = room.config?.initialHp !== '' && room.config?.initialHp !== undefined ? parseInt(room.config.initialHp) : null;
     if (startHp === null || isNaN(startHp) || startHp < 1) {
       startHp = Math.floor(Math.random() * 4) + 3; // Random 3 to 6
@@ -146,20 +158,17 @@ export class GameEngine {
 
     room.shells = array;
 
-    // Distribute items
     room.players.forEach(p => {
       let countToGive = 0;
 
       if (isGameStart) {
-        // Initial game start item count
         if (room.config?.initialItems !== '' && room.config?.initialItems !== undefined) {
           countToGive = parseInt(room.config.initialItems);
-          if (isNaN(countToGive) || countToGive < 0) countToGive = Math.floor(Math.random() * 3); // 0 to 2
+          if (isNaN(countToGive) || countToGive < 0) countToGive = Math.floor(Math.random() * 3);
         } else {
-          countToGive = Math.floor(Math.random() * 3); // Random 0 to 2
+          countToGive = Math.floor(Math.random() * 3);
         }
       } else {
-        // Subsequent reload round: 2 to 3 items!
         countToGive = Math.floor(Math.random() * 2) + 2; // 2 to 3
       }
 

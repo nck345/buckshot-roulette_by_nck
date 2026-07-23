@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Plus, Users, Copy, Check, Skull, Monitor, Settings } from 'lucide-react';
+import { Play, Plus, Users, Copy, Check, Skull, Monitor } from 'lucide-react';
+import RoomConfigModal from './RoomConfigModal';
 
 export default function Lobby({ onCreateRoom, onJoinRoom, onStartLocalGame, roomCode, isWaitingForPlayer }) {
   const [nickname, setNickname] = useState('');
   const [inputCode, setInputCode] = useState('');
   const [p2Nickname, setP2Nickname] = useState('Người chơi 2');
   
-  // Custom Room Settings
-  const [initialHp, setInitialHp] = useState('');
-  const [initialItems, setInitialItems] = useState('');
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [pendingMode, setPendingMode] = useState(''); // 'online' or 'local'
 
   const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -32,13 +32,35 @@ export default function Lobby({ onCreateRoom, onJoinRoom, onStartLocalGame, room
     localStorage.setItem('buckshot_nick', val);
   };
 
-  const handleCreate = () => {
+  const handleOpenOnlineConfig = () => {
     if (!nickname.trim()) {
       setErrorMsg('Vui lòng nhập tên biệt hiệu!');
       return;
     }
     setErrorMsg('');
-    onCreateRoom(nickname.trim(), initialHp, initialItems);
+    setPendingMode('online');
+    setShowConfigModal(true);
+  };
+
+  const handleOpenLocalConfig = () => {
+    if (!nickname.trim()) {
+      setErrorMsg('Vui lòng nhập tên Người chơi 1!');
+      return;
+    }
+    setErrorMsg('');
+    setPendingMode('local');
+    setShowConfigModal(true);
+  };
+
+  const handleConfirmConfig = (initialHp, initialItems) => {
+    setShowConfigModal(false);
+    if (pendingMode === 'online') {
+      onCreateRoom(nickname.trim(), initialHp, initialItems);
+    } else if (pendingMode === 'local') {
+      const p1 = nickname.trim() || 'Người chơi 1';
+      const p2 = p2Nickname.trim() || 'Người chơi 2';
+      onStartLocalGame(p1, p2, initialHp, initialItems);
+    }
   };
 
   const handleJoin = () => {
@@ -52,12 +74,6 @@ export default function Lobby({ onCreateRoom, onJoinRoom, onStartLocalGame, room
     }
     setErrorMsg('');
     onJoinRoom(inputCode.trim().toUpperCase(), nickname.trim());
-  };
-
-  const handleLocalPlay = () => {
-    const p1 = nickname.trim() || 'Người chơi 1';
-    const p2 = p2Nickname.trim() || 'Người chơi 2';
-    onStartLocalGame(p1, p2, initialHp, initialItems);
   };
 
   const copyInviteLink = () => {
@@ -102,14 +118,14 @@ export default function Lobby({ onCreateRoom, onJoinRoom, onStartLocalGame, room
   }
 
   return (
-    <div style={{ maxWidth: '540px', margin: '30px auto', padding: '0 20px', maxHeight: '95vh', overflowY: 'auto' }}>
+    <div style={{ maxWidth: '520px', margin: '40px auto', padding: '0 20px' }}>
       <div className="cyber-card" style={{ padding: '30px 25px' }}>
         
         {/* Title Header */}
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '25px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: 'var(--accent-red)' }}>
             <Skull size={36} />
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', textTransform: 'uppercase', letterSpacing: '2px' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', textTransform: 'uppercase', letterSpacing: '2px' }}>
               BUCKSHOT ROULETTE
             </h1>
           </div>
@@ -119,7 +135,7 @@ export default function Lobby({ onCreateRoom, onJoinRoom, onStartLocalGame, room
         </div>
 
         {/* Mode Selector Tabs */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '25px' }}>
           <button
             className={`cyber-button ${activeTab === 'online' ? 'danger' : ''}`}
             onClick={() => setActiveTab('online')}
@@ -147,67 +163,16 @@ export default function Lobby({ onCreateRoom, onJoinRoom, onStartLocalGame, room
             padding: '10px 14px',
             borderRadius: '4px',
             fontSize: '0.9rem',
-            marginBottom: '15px',
+            marginBottom: '20px',
             textAlign: 'center'
           }}>
             ⚠️ {errorMsg}
           </div>
         )}
 
-        {/* CUSTOM ROOM CONFIGURATION BOX */}
-        <div style={{
-          background: 'rgba(0, 0, 0, 0.4)',
-          border: '1px solid var(--panel-border)',
-          borderRadius: '6px',
-          padding: '14px',
-          marginBottom: '20px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '10px' }}>
-            <Settings size={14} />
-            CẤU HÌNH PHÒNG CHƠI (TÙY CHỌN):
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                Lượng máu (HP) ban đầu:
-              </label>
-              <input
-                type="number"
-                className="cyber-input"
-                value={initialHp}
-                onChange={(e) => setInitialHp(e.target.value)}
-                placeholder="Ngẫu nhiên (3 - 6 HP)..."
-                min={1}
-                max={10}
-                style={{ fontSize: '0.85rem', padding: '8px 10px' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                Vật phẩm (Đồ) ban đầu:
-              </label>
-              <input
-                type="number"
-                className="cyber-input"
-                value={initialItems}
-                onChange={(e) => setInitialItems(e.target.value)}
-                placeholder="Ngẫu nhiên (0 - 2 đồ)..."
-                min={0}
-                max={8}
-                style={{ fontSize: '0.85rem', padding: '8px 10px' }}
-              />
-            </div>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '6px' }}>
-            * Nếu để trống: Tự động ngẫu nhiên HP (3-6) và Đồ ban đầu (0-2). Các lần nạp đạn sau sẽ cộng thêm 2-3 đồ.
-          </div>
-        </div>
-
         {/* ONLINE TAB */}
         {activeTab === 'online' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>
                 Tên Biệt Hiệu (Nickname):
@@ -222,8 +187,8 @@ export default function Lobby({ onCreateRoom, onJoinRoom, onStartLocalGame, room
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
-              <button className="cyber-button danger" onClick={handleCreate} style={{ padding: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '14px' }}>
+              <button className="cyber-button danger" onClick={handleOpenOnlineConfig} style={{ padding: '15px' }}>
                 <Plus size={18} />
                 TẠO PHÒNG MỚI (ONLINE ROOM)
               </button>
@@ -253,7 +218,7 @@ export default function Lobby({ onCreateRoom, onJoinRoom, onStartLocalGame, room
 
         {/* LOCAL 2-PLAYER TAB */}
         {activeTab === 'local' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', lineHeight: '1.4' }}>
               Chế độ **2 Người 1 Máy (Pass & Play)**: Hai người chơi luân phiên thao tác trên cùng một thiết bị.
             </p>
@@ -286,17 +251,26 @@ export default function Lobby({ onCreateRoom, onJoinRoom, onStartLocalGame, room
               />
             </div>
 
-            <button className="cyber-button danger" onClick={handleLocalPlay} style={{ padding: '14px', marginTop: '5px', fontSize: '1rem' }}>
+            <button className="cyber-button danger" onClick={handleOpenLocalConfig} style={{ padding: '15px', marginTop: '5px', fontSize: '1rem' }}>
               <Play size={18} />
               BẮT ĐẦU CHƠI 2 NGƯỜI 1 MÁY
             </button>
           </div>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: '20px', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+        <div style={{ textAlign: 'center', marginTop: '25px', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
           🎮 Chế độ Online Multiplayer & Offline 2 Người 1 Máy
         </div>
       </div>
+
+      {/* POPUP CONFIGURATION MODAL DIALOG */}
+      {showConfigModal && (
+        <RoomConfigModal
+          title={pendingMode === 'online' ? "CẤU HÌNH PHÒNG ONLINE" : "CẤU HÌNH PHÒNG CHƠI LOCAL"}
+          onConfirm={handleConfirmConfig}
+          onClose={() => setShowConfigModal(false)}
+        />
+      )}
     </div>
   );
 }
