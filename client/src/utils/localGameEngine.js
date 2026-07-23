@@ -35,7 +35,7 @@ export class LocalGameEngine {
 
     let startHp = this.config?.initialHp !== '' && this.config?.initialHp !== undefined ? parseInt(this.config.initialHp) : null;
     if (startHp === null || isNaN(startHp) || startHp < 1) {
-      startHp = Math.floor(Math.random() * 4) + 3; // Random 3 to 6
+      startHp = Math.floor(Math.random() * 4) + 3;
     }
 
     this.room.players.forEach(p => {
@@ -45,11 +45,12 @@ export class LocalGameEngine {
       p.handcuffed = false;
     });
 
-    this.addLog(`🎮 BẮT ĐẦU CHẾ ĐỘ 2 NGƯỜI 1 MÁY! HP ban đầu: ${startHp}. ${this.room.players[this.room.turnIndex].nickname} đi trước.`);
     this.loadNewRound(true);
   }
 
   loadNewRound(isGameStart = false) {
+    // CLEAR/RESET ACTION LOGS FOR EACH NEW SHELL RELOAD ROUND!
+    this.room.logs = [];
     this.room.sawActive = false;
     this.room.currentIndex = 0;
 
@@ -80,10 +81,10 @@ export class LocalGameEngine {
           countToGive = parseInt(this.config.initialItems);
           if (isNaN(countToGive) || countToGive < 0) countToGive = Math.floor(Math.random() * 3);
         } else {
-          countToGive = Math.floor(Math.random() * 3); // 0 to 2
+          countToGive = Math.floor(Math.random() * 3);
         }
       } else {
-        countToGive = Math.floor(Math.random() * 2) + 2; // 2 to 3
+        countToGive = Math.floor(Math.random() * 2) + 2;
       }
 
       for (let i = 0; i < countToGive; i++) {
@@ -98,7 +99,9 @@ export class LocalGameEngine {
       this.room.round += 1;
     }
 
-    this.addLog(`🔄 Nạp đạn mới (Round ${this.room.round}): ${live} viên THẬT (Đỏ) | ${blank} viên GIẢ (Xanh).`);
+    this.addLog(`🔄 BẮT ĐẦU ĐỢT ĐẠN MỚI (ROUND ${this.room.round})`);
+    this.addLog(`🔴 Đạn THẬT: ${live} | 🔵 Đạn GIẢ: ${blank}`);
+    this.addLog(`👉 ${this.room.players[this.room.turnIndex].nickname} đi trước.`);
   }
 
   addLog(text) {
@@ -163,17 +166,17 @@ export class LocalGameEngine {
     if (target === 'self') {
       if (isLive) {
         shooter.hp = Math.max(0, shooter.hp - damage);
-        this.addLog(`💥 ${shooter.nickname} tự bắn chính mình với viên THẬT! Mất ${damage} HP.`);
+        this.addLog(`💥 ${shooter.nickname} tự bắn mình bằng ĐẠN THẬT! Mất ${damage} HP.`);
         this.switchTurn();
       } else {
-        this.addLog(`💨 ${shooter.nickname} tự bắn chính mình với viên GIẢ! Được GIỮ LƯỢT!`);
+        this.addLog(`💨 ${shooter.nickname} tự bắn mình bằng ĐẠN GIẢ! Được GIỮ LƯỢT!`);
       }
     } else if (target === 'opponent') {
       if (isLive) {
         opponent.hp = Math.max(0, opponent.hp - damage);
-        this.addLog(`💥 ${shooter.nickname} bắn ${opponent.nickname} bằng viên THẬT! Gây ${damage} sát thương!`);
+        this.addLog(`💥 ${shooter.nickname} bắn ${opponent.nickname} bằng ĐẠN THẬT! Gây ${damage} HP sát thương!`);
       } else {
-        this.addLog(`💨 ${shooter.nickname} bắn ${opponent.nickname} bằng viên GIẢ! Không có sát thương.`);
+        this.addLog(`💨 ${shooter.nickname} bắn ${opponent.nickname} bằng ĐẠN GIẢ! Không có sát thương.`);
       }
       this.switchTurn();
     }
@@ -192,7 +195,7 @@ export class LocalGameEngine {
       const winnerName = shooter.hp > 0 ? shooter.nickname : opponent.nickname;
       this.addLog(`🏆 TRẬN ĐẤU KẾT THÚC! ${winnerName} CHIẾN THẮNG!`);
     } else if (this.room.currentIndex >= this.room.shells.length) {
-      this.addLog('⚡ Băng đạn đã hết! Đang nạp băng đạn mới...');
+      this.addLog('⚡ Đã hết đạn! Nạp băng đạn mới...');
       this.loadNewRound(false);
     }
 
@@ -214,7 +217,7 @@ export class LocalGameEngine {
     switch (itemKey) {
       case ITEM_TYPES.GLASS: {
         privateFeedback = `🔍 MẬT (Kính Lúp): Viên đạn hiện tại là ${currentShell === 'live' ? 'ĐẠN THẬT (ĐỎ)' : 'ĐẠN GIẢ (XANH)'}`;
-        this.addLog(`🔍 ${player.nickname} dùng Kính Lúp xem viên đạn hiện tại.`);
+        this.addLog(`🔍 ${player.nickname} xem Kính Lúp.`);
         break;
       }
       case ITEM_TYPES.CIGARETTE: {
@@ -226,24 +229,24 @@ export class LocalGameEngine {
         this.room.currentIndex++;
         this.addLog(`🍺 ${player.nickname} uống bia xả đạn: ${currentShell === 'live' ? 'ĐẠN THẬT (ĐỎ)' : 'ĐẠN GIẢ (XANH)'}`);
         if (this.room.currentIndex >= this.room.shells.length) {
-          this.addLog('⚡ Băng đạn đã hết! Đang nạp băng đạn mới...');
+          this.addLog('⚡ Đã hết đạn! Nạp băng đạn mới...');
           this.loadNewRound(false);
         }
         break;
       }
       case ITEM_TYPES.SAW: {
         this.room.sawActive = true;
-        this.addLog(`🪚 ${player.nickname} đã cưa nòng súng! Sát thương x2!`);
+        this.addLog(`🪚 ${player.nickname} cưa nòng súng! Sát thương x2!`);
         break;
       }
       case ITEM_TYPES.HANDCUFFS: {
         opponent.handcuffed = true;
-        this.addLog(`⛓️ ${player.nickname} đã còng tay ${opponent.nickname}! Mất lượt tiếp theo.`);
+        this.addLog(`⛓️ ${player.nickname} còng tay ${opponent.nickname}! Mất lượt tiếp.`);
         break;
       }
       case ITEM_TYPES.INVERTER: {
         this.room.shells[this.room.currentIndex] = currentShell === 'live' ? 'blank' : 'live';
-        this.addLog(`🔄 ${player.nickname} dùng Đầu Chuyển thay đổi loại đạn hiện tại!`);
+        this.addLog(`🔄 ${player.nickname} dùng Đầu Chuyển đổi loại đạn!`);
         break;
       }
       case ITEM_TYPES.PHONE: {
@@ -252,10 +255,10 @@ export class LocalGameEngine {
           const offset = Math.floor(Math.random() * (remaining - 1)) + 1;
           const futureShell = this.room.shells[this.room.currentIndex + offset];
           privateFeedback = `📞 MẬT (Điện thoại): Viên đạn thứ ${offset + 1} tính từ hiện tại là ${futureShell === 'live' ? 'ĐẠN THẬT (ĐỎ)' : 'ĐẠN GIẢ (XANH)'}`;
-          this.addLog(`📞 ${player.nickname} nghe điện thoại nhận manh mối bí mật.`);
+          this.addLog(`📞 ${player.nickname} nghe điện thoại nhận manh mối.`);
         } else {
           privateFeedback = `📞 Điện thoại: Không còn đạn tương lai để xem.`;
-          this.addLog(`📞 ${player.nickname} nghe điện thoại nhưng không có manh mối.`);
+          this.addLog(`📞 ${player.nickname} nghe điện thoại nhưng không có thông tin.`);
         }
         break;
       }
@@ -265,16 +268,16 @@ export class LocalGameEngine {
           if (stealIdx >= opponent.items.length) stealIdx = 0;
           const stolen = opponent.items.splice(stealIdx, 1)[0];
           player.items.push(stolen);
-          this.addLog(`💉 ${player.nickname} dùng Adrenaline cướp vật phẩm ${ITEMS_INFO[stolen]?.nameVi || stolen}!`);
+          this.addLog(`💉 ${player.nickname} cướp ${ITEMS_INFO[stolen]?.nameVi || stolen}!`);
         } else {
-          this.addLog(`💉 ${player.nickname} dùng Adrenaline nhưng đối thủ không có đồ!`);
+          this.addLog(`💉 ${player.nickname} dùng Adrenaline nhưng đối thủ hết đồ!`);
         }
         break;
       }
       case ITEM_TYPES.EXPIRED_MEDICINE: {
         if (Math.random() < 0.5) {
           player.hp = Math.min(player.maxHp, player.hp + 2);
-          this.addLog(`💊 ${player.nickname} dùng Thuốc Hết Hạn HỒI THÀNH CÔNG 2 HP!`);
+          this.addLog(`💊 ${player.nickname} dùng Thuốc Hết Hạn HỒI 2 HP!`);
         } else {
           player.hp = Math.max(0, player.hp - 1);
           this.addLog(`💊 ${player.nickname} dùng Thuốc Hết Hạn BỊ NGỘ ĐỘC mất 1 HP!`);

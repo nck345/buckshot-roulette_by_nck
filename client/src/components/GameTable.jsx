@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Crosshair, UserCheck, Copy, Check, Eye, LogOut } from 'lucide-react';
+import { Crosshair, UserCheck, Copy, Check, Eye, LogOut, Terminal } from 'lucide-react';
 import AdrenalineModal from './AdrenalineModal';
 import { soundManager } from '../audio/soundManager';
 import { ITEMS_INFO, ITEM_TYPES } from '../utils/items';
@@ -20,6 +20,7 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, onL
   const prevP1Hp = useRef(null);
   const prevP2Hp = useRef(null);
   const lastActionTimestamp = useRef(null);
+  const logEndRef = useRef(null);
 
   if (!gameState || !gameState.players || gameState.players.length < 2) return null;
 
@@ -47,6 +48,11 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, onL
 
   // Check if user is allowed to act
   const canAct = isLocalMode ? true : isLeftTurn;
+
+  // Auto-scroll action log to bottom on new log
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [gameState.logs]);
 
   // Real-time animation broadcast for ALL actions (Both Player & Opponent turns!)
   useEffect(() => {
@@ -151,7 +157,6 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, onL
     return 'tooltip-center';
   };
 
-  // Render HP cleanly for any amount (no limit!)
   const renderHP = (hp, maxHp) => {
     if (maxHp <= 8) {
       const hearts = [];
@@ -170,7 +175,6 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, onL
       return <div style={{ display: 'flex', gap: '4px' }}>{hearts}</div>;
     }
 
-    // For large HP values (>8), display a sleek Cyber HP Bar + Numbers
     const percent = Math.max(0, Math.min(100, (hp / maxHp) * 100));
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '130px' }}>
@@ -233,22 +237,15 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, onL
           )}
         </div>
 
-        {/* Shell Counts & Leave Game Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ display: 'flex', gap: '15px', fontFamily: 'var(--font-retro)', fontSize: '1.3rem' }}>
-            <span style={{ color: '#ff3b30' }}>🔴 THẬT: {gameState.liveCount}</span>
-            <span style={{ color: '#00e5ff' }}>🔵 GIẢ: {gameState.blankCount}</span>
-          </div>
-
-          <button
-            className="cyber-button danger"
-            onClick={onLeaveRoom}
-            style={{ padding: '6px 14px', fontSize: '0.8rem', gap: '4px' }}
-          >
-            <LogOut size={14} />
-            THOÁT PHÒNG
-          </button>
-        </div>
+        {/* Leave Game Button */}
+        <button
+          className="cyber-button danger"
+          onClick={onLeaveRoom}
+          style={{ padding: '6px 14px', fontSize: '0.8rem', gap: '4px' }}
+        >
+          <LogOut size={14} />
+          THOÁT PHÒNG
+        </button>
       </div>
 
       {/* Secret Hint Banner */}
@@ -336,18 +333,24 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, onL
           </div>
         </div>
 
-        {/* CENTER PANEL: SHOTGUN STAGE & ACTION BUTTONS */}
+        {/* CENTER PANEL: SHELL COUNT BADGE + SHOTGUN + CONTROLS + ACTION LOG */}
         <div className="center-stage">
           
+          {/* PROMINENT SHELL COUNT BADGE (🔴 THẬT / 🔵 GIẢ) IN CENTER STAGE */}
+          <div className="center-shell-badge">
+            <span style={{ color: '#ff3b30' }}>🔴 THẬT: {gameState.liveCount}</span>
+            <span style={{ color: '#00e5ff' }}>🔵 GIẢ: {gameState.blankCount}</span>
+          </div>
+
           {/* Saw Damage Indicator */}
           {gameState.sawActive && (
             <div style={{
               background: 'rgba(255, 59, 48, 0.25)',
               border: '1px solid var(--accent-red)',
               color: '#ff6b6b',
-              padding: '6px 16px',
+              padding: '4px 14px',
               borderRadius: '20px',
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
               fontWeight: 'bold',
               letterSpacing: '1px',
               animation: 'pulse 1s infinite'
@@ -374,7 +377,7 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, onL
               </div>
             )}
 
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
               Đạn còn lại trong nòng: <strong style={{ color: 'var(--accent-gold)' }}>{gameState.totalShellsRemaining} viên</strong>
             </div>
           </div>
@@ -382,10 +385,10 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, onL
           {/* Turn Status Banner */}
           <div style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '1.05rem',
+            fontSize: '0.95rem',
             fontWeight: 'bold',
             color: isLeftTurn ? 'var(--accent-cyan)' : '#ff6b6b',
-            marginBottom: '10px'
+            marginBottom: '6px'
           }}>
             👉 ĐANG LƯỢT: {activePlayer.nickname}
           </div>
@@ -396,9 +399,9 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, onL
               className="cyber-button"
               onClick={handleShootSelf}
               disabled={!canAct}
-              style={{ padding: '14px 20px', fontSize: '1rem', borderColor: 'var(--accent-gold)' }}
+              style={{ padding: '12px 18px', fontSize: '0.95rem', borderColor: 'var(--accent-gold)' }}
             >
-              <UserCheck size={20} />
+              <UserCheck size={18} />
               BẮN BẢN THÂN
             </button>
 
@@ -406,11 +409,31 @@ export default function GameTable({ gameState, socketId, onShoot, onUseItem, onL
               className="cyber-button danger"
               onClick={handleShootOpponent}
               disabled={!canAct}
-              style={{ padding: '14px 20px', fontSize: '1rem' }}
+              style={{ padding: '12px 18px', fontSize: '0.95rem' }}
             >
-              <Crosshair size={20} />
+              <Crosshair size={18} />
               BẮN ĐỐI THỦ
             </button>
+          </div>
+
+          {/* MINI ACTION LOG CONSOLE (RESETS EVERY NEW RELOAD ROUND) */}
+          <div className="action-log-mini">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-cyan)', fontSize: '0.72rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '2px' }}>
+              <Terminal size={12} /> NHẬT KÝ LẦN NẠP ĐẠN NÀY:
+            </div>
+            {gameState.logs && gameState.logs.length > 0 ? (
+              gameState.logs.map((log, index) => (
+                <div key={index} className="action-log-item">
+                  <span className="action-log-time">[{log.time}]</span>
+                  <span>{log.text}</span>
+                </div>
+              ))
+            ) : (
+              <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.75rem' }}>
+                Chờ lượt hành động...
+              </div>
+            )}
+            <div ref={logEndRef} />
           </div>
 
         </div>
