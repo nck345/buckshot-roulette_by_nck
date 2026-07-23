@@ -131,7 +131,6 @@ export class GameEngine {
   }
 
   loadNewRound(room, isGameStart = false) {
-    // CLEAR/RESET ACTION LOGS FOR EACH NEW SHELL RELOAD ROUND!
     room.logs = [];
     room.sawActive = false;
     room.currentIndex = 0;
@@ -169,7 +168,8 @@ export class GameEngine {
           countToGive = Math.floor(Math.random() * 3);
         }
       } else {
-        countToGive = Math.floor(Math.random() * 2) + 2; // 2 to 3
+        // EVERY RELOAD ROUND GIVES STRICTLY 1 ITEM PER PLAYER!
+        countToGive = 1;
       }
 
       for (let i = 0; i < countToGive; i++) {
@@ -387,13 +387,20 @@ export class GameEngine {
       }
 
       case ITEM_TYPES.ADRENALINE: {
-        if (opponent.items.length === 0) {
-          this.addLog(room, `💉 ${player.nickname} dùng Adrenaline nhưng đối thủ hết đồ!`);
+        // FILTER OUT ADRENALINE ITEMS: ADRENALINE CANNOT STEAL ADRENALINE!
+        const stealableItems = opponent.items
+          .map((item, originalIndex) => ({ item, originalIndex }))
+          .filter(i => i.item !== ITEM_TYPES.ADRENALINE);
+
+        if (stealableItems.length === 0) {
+          this.addLog(room, `💉 ${player.nickname} dùng Adrenaline nhưng đối thủ không có vật phẩm nào có thể cướp!`);
         } else {
-          let stealIndex = extraTarget !== null ? extraTarget : Math.floor(Math.random() * opponent.items.length);
-          if (stealIndex < 0 || stealIndex >= opponent.items.length) stealIndex = 0;
-          const stolenItem = opponent.items[stealIndex];
-          opponent.items.splice(stealIndex, 1);
+          let chosenTarget = stealableItems[0];
+          if (extraTarget !== null) {
+            const found = stealableItems.find(i => i.originalIndex === extraTarget);
+            if (found) chosenTarget = found;
+          }
+          const stolenItem = opponent.items.splice(chosenTarget.originalIndex, 1)[0];
           player.items.push(stolenItem);
           this.addLog(room, `💉 ${player.nickname} cướp ${ITEMS_INFO[stolenItem]?.nameVi || stolenItem} của ${opponent.nickname}!`);
         }

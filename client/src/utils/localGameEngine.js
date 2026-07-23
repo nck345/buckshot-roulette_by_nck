@@ -49,7 +49,6 @@ export class LocalGameEngine {
   }
 
   loadNewRound(isGameStart = false) {
-    // CLEAR/RESET ACTION LOGS FOR EACH NEW SHELL RELOAD ROUND!
     this.room.logs = [];
     this.room.sawActive = false;
     this.room.currentIndex = 0;
@@ -84,7 +83,8 @@ export class LocalGameEngine {
           countToGive = Math.floor(Math.random() * 3);
         }
       } else {
-        countToGive = Math.floor(Math.random() * 2) + 2;
+        // EVERY RELOAD ROUND GIVES STRICTLY 1 ITEM PER PLAYER!
+        countToGive = 1;
       }
 
       for (let i = 0; i < countToGive; i++) {
@@ -263,14 +263,22 @@ export class LocalGameEngine {
         break;
       }
       case ITEM_TYPES.ADRENALINE: {
-        if (opponent.items.length > 0) {
-          let stealIdx = extraTarget !== null ? extraTarget : 0;
-          if (stealIdx >= opponent.items.length) stealIdx = 0;
-          const stolen = opponent.items.splice(stealIdx, 1)[0];
-          player.items.push(stolen);
-          this.addLog(`💉 ${player.nickname} cướp ${ITEMS_INFO[stolen]?.nameVi || stolen}!`);
+        // FILTER OUT ADRENALINE ITEMS: ADRENALINE CANNOT STEAL ADRENALINE!
+        const stealableItems = opponent.items
+          .map((item, originalIndex) => ({ item, originalIndex }))
+          .filter(i => i.item !== ITEM_TYPES.ADRENALINE);
+
+        if (stealableItems.length === 0) {
+          this.addLog(`💉 ${player.nickname} dùng Adrenaline nhưng đối thủ không có vật phẩm nào có thể cướp!`);
         } else {
-          this.addLog(`💉 ${player.nickname} dùng Adrenaline nhưng đối thủ hết đồ!`);
+          let chosenTarget = stealableItems[0];
+          if (extraTarget !== null) {
+            const found = stealableItems.find(i => i.originalIndex === extraTarget);
+            if (found) chosenTarget = found;
+          }
+          const stolenItem = opponent.items.splice(chosenTarget.originalIndex, 1)[0];
+          player.items.push(stolenItem);
+          this.addLog(`💉 ${player.nickname} cướp ${ITEMS_INFO[stolenItem]?.nameVi || stolenItem}!`);
         }
         break;
       }
